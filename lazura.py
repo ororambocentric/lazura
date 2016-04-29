@@ -4,6 +4,12 @@ import os
 from os.path import expanduser
 import sys
 
+import shutil
+
+import datetime
+
+from helper import get_dir_size, copy_anything
+
 
 class App:
 
@@ -16,13 +22,13 @@ class App:
         self.config_file_path = os.path.join(self.user_home_path, '.lazura')
 
         try:
-            self.config = open(self.config_file_path)
+            self.config_raw = open(self.config_file_path)
         except IOError as e:
             self.raise_error('Error: {}: {}'.format(self.config_file_path,
                                                     os.strerror(e.errno)))
 
         try:
-            self.config_dict = json.loads(''.join(self.config.readlines()))
+            self.config = json.loads(''.join(self.config_raw.readlines()))
         except ValueError as e:
             self.raise_error('Error: {}: invalid JSON: {}'.format(self.config_file_path, e))
 
@@ -58,35 +64,46 @@ class App:
                 self.raise_error('Error: commit: param \'name\' is missing')
             self.action_commit(self.app_params[0])
 
-    def action_commit(self, name=None):
-        print (name)
+    def node_exists(self, node_name):
+        return True if node_name in self.config else False
 
+    def node_exists_or_error(self, node_name):
+        if not self.node_exists(node_name):
+            self.raise_error('Error: node \'{}\' is not exists'
+                             .format(node_name))
+
+    def get_node_param(self, node_name, param_name):
+        self.node_exists_or_error(node_name)
+        try:
+            return self.config[node_name][param_name]
+        except KeyError:
+            self.raise_error('Error: node \'{}\': param \'{}\' is missing'
+                             .format(node_name, param_name))
+
+    def action_commit(self, node_name):
+        host = self.get_node_param(node_name, 'host')
+        if not os.path.exists(host):
+            self.raise_error('Error: node \'{}\': host \'{}\' is not exists'
+                             .format(node_name, host))
+
+        host_size = get_dir_size(host)
+
+        endpoint = self.get_node_param(node_name, 'endpoint')
+        if not os.path.exists(endpoint):
+            self.raise_error('Error: node \'{}\': endpoint \'{}\' is not exists'
+                             .format(node_name, endpoint))
+        subdir = str(datetime.datetime.utcnow())
+        endpoint_final_path = os.path.join(endpoint, subdir, os.path.basename(host))
+
+        print ('{}: saving...'.format(node_name))
+
+        copy_anything(host, endpoint_final_path)
+
+        if host_size == get_dir_size(endpoint_final_path):
+            print ('SUCCESS.')
+        else:
+            print ('FAILED: Copying error')
 
 if __name__ == "__main__":
 
     App()
-
-    #
-    # try:
-    #     config_dict = json.loads(''.join(config.readlines()))
-    # except ValueError as e:
-    #     exit('Error: {}: invalid JSON: {}'.format(config_file_path, e))
-    #
-    # # todo: config format validate
-    #
-    # if len(sys.argv) == 1:
-    #     show_help() and exit()
-    #
-    # elif len(sys.argv) >= 2:
-    #     if sys.argv[1] == 'commit':
-    #         try:
-    #             goal = sys.argv[3]
-    #         except IndexError:
-    #             exit('Error: commit: name of source is missing')
-    #
-    #
-    #
-    #
-    #
-    #
-
