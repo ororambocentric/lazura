@@ -81,25 +81,28 @@ class App:
                              .format(node_name, param_name))
 
     def action_commit(self, node_name):
-        host = self.get_node_param(node_name, 'host')
-        if not os.path.exists(host):
-            self.raise_error('Error: node \'{}\': host \'{}\' is not exists'
-                             .format(node_name, host))
+        location = self.get_node_param(node_name, 'location')
+        if not os.path.exists(location):
+            self.raise_error('Error: node \'{}\': location \'{}\' is not exists'
+                             .format(node_name, location))
 
-        host_size = get_dir_size(host)
+        location_size = get_dir_size(location)
 
-        endpoint = self.get_node_param(node_name, 'endpoint')
-        if not os.path.exists(endpoint):
-            self.raise_error('Error: node \'{}\': endpoint \'{}\' is not exists'
-                             .format(node_name, endpoint))
+        destination = self.get_node_param(node_name, 'destination')
+        if not os.path.exists(destination):
+            self.raise_error('Error: node \'{}\': destination \'{}\' is not exists'
+                             .format(node_name, destination))
         subdir = str(datetime.datetime.utcnow())
-        endpoint_final_path = os.path.join(endpoint, subdir, os.path.basename(host))
+        destination_final_path = os.path.join(destination,
+                                              os.path.basename(location),
+                                              subdir,
+                                              os.path.basename(location))
 
         print ('{}: saving...'.format(node_name))
 
-        copy_anything(host, endpoint_final_path)
+        copy_anything(location, destination_final_path)
 
-        if host_size == get_dir_size(endpoint_final_path):
+        if location_size == get_dir_size(destination_final_path):
             print ('SUCCESS.')
         else:
             print ('FAILED: Copying error')
